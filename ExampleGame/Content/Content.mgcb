@@ -1,0 +1,21 @@
+
+#----------------------------- Global Properties ----------------------------#
+
+/outputDir:bin/$(Platform)
+/intermediateDir:obj/$(Platform)
+/platform:Windows
+/config:
+/profile:Reach
+/compress:False
+
+#-------------------------------- References --------------------------------#
+
+/reference:..\..\TilemapPipeline\bin\Debug\net6.0\TilemapPipeline.dll
+
+#---------------------------------- Content ---------------------------------#
+
+#begin BasicMapTest.tmx
+/importer:TiledImporter
+/processor:BasicTilemapProcessor
+/build:BasicMapTest.tmx
+
