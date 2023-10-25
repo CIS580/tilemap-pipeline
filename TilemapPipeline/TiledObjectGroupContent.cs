@@ -6,7 +6,22 @@ using System.Threading.Tasks;
 
 namespace TilemapPipeline
 {
-    internal class TiledObjectGroupContent
+    public class TiledObjectGroupContent
     {
+        public string Name;
+
+        public int Width;
+
+        public int Height;
+
+        public int X;
+
+        public int Y;
+
+        public float Opacity;
+
+        public List<TiledObjectContent> Objects = new();
+
+        public Dictionary<string, string> Properties = new();
     }
 }

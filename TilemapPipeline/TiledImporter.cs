@@ -2,27 +2,39 @@
 using System;
 using System.Xml;
 using System.IO;
+using System.Collections.Generic;
 using MonoGame.Framework.Utilities.Deflate;
 using Microsoft.Xna.Framework.Graphics;
+using System.Reflection.Emit;
 
 namespace TilemapPipeline
 {
-    [ContentImporter(".tmx", DisplayName = "TiledImporter", DefaultProcessor = "TiledProcessor")]
-    public class TiledImporter : ContentImporter<MapContent>
+    /// <summary>
+    /// An importer for Tiled tilemaps.  It creates a TiledMapContent object, which is
+    /// a near-exact reflection of the structure of a tiled file as C# objects.
+    /// This should be paired with a ContentProcessor that uses this information to 
+    /// populate a game-specific tilemap implementation.
+    /// </summary>
+    [ContentImporter(".tmx", DisplayName = "Tiled Importer")]
+    public class TiledImporter : ContentImporter<TiledMapContent>
     {
-        private ContentImporterContext Context { get; set; }
-
-        public override MapContent Import(string filename, ContentImporterContext context)
+        /// <summary>
+        /// Imports a Tiled map file in the .tmx format.  This is an XML-based file format 
+        /// that is documented here: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/
+        /// </summary>
+        /// <param name="filename">The name of the TMX file</param>
+        /// <param name="context">A context for the importing</param>
+        /// <returns>The loaded TilemapContent object</returns>
+        /// <exception cref="Exception"></exception>
+        public override TiledMapContent Import(string filename, ContentImporterContext context)
         {
-            Context = context;
-            
             XmlReaderSettings settings = new();
             settings.DtdProcessing = DtdProcessing.Parse;
 
             using var stream = System.IO.File.OpenText(filename);
             using XmlReader reader = XmlReader.Create(stream, settings);
 
-            var map = new MapContent();
+            var map = new TiledMapContent();
 
             while (reader.Read())
             {
@@ -49,28 +61,30 @@ namespace TilemapPipeline
                                 {
                                     using var st = reader.ReadSubtree();
                                     st.Read();
-                                    var tileset = LoadTileset(st);
-                                    map.Tilesets.Add(tileset);  
+                                    map.Tilesets.Add(LoadTileset(st));
                                 }
                                 break;
                             case "layer":
                                 {
                                     using var st = reader.ReadSubtree();
                                     st.Read();
-                                    var layer = LoadLayer(st);
-                                    map.TileLayers.Add(layer);
+                                    map.TileLayers.Add(LoadLayer(st));
                                 }
                                 break;
                             case "objectgroup":
                                 {
-
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    map.ObjectGroups.Add(LoadObjectGroup(st));
                                 }
                                 break;
                             case "properties":
                                 {
-
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    map.Properties = LoadProperties(st);
+                                    break;
                                 }
-                                break;
                             default:
                                 context.Logger.LogMessage($"Unhandled XML Element {name}");
                                 break;
@@ -80,24 +94,29 @@ namespace TilemapPipeline
                             break;
                     case XmlNodeType.Whitespace:
                             break;
+                    case XmlNodeType.XmlDeclaration:
+                            break;
                     default:
-                        context.Logger.LogMessage($"Unhandled XML Element {name}");
+                        context.Logger.LogMessage($"Unhandled XML Node {name}");
                         break;
                 }
             }
 
-            context.Logger.LogMessage("Dimensions:");
-            context.Logger.LogMessage($"{map.TileWidth}");
-            context.Logger.LogMessage($"{map.TileHeight}");
-
-
             return map;
         }
 
+        /// <summary>
+        /// Constants for flags used by Tiled to indicate flipped tiles
+        /// </summary>
         private const uint FlippedHorizontallyFlag = 0x80000000;
         private const uint FlippedVerticallyFlag = 0x40000000;
         private const uint FlippedDiagonallyFlag = 0x20000000;
 
+        /// <summary>
+        /// Loads a TilesetContent from a `<tileset>` element
+        /// </summary>
+        /// <param name="reader">The XML Reader</param>
+        /// <returns>The loaded TilesetContent</returns>
         private TilesetContent LoadTileset(XmlReader reader)
         {
             TilesetContent tileset = new();
@@ -130,9 +149,13 @@ namespace TilemapPipeline
                             case "tile":
                                 currentTileId = int.Parse(reader.GetAttribute("id"));
                                 break;
-                            case "property":
-                                // TODO: Finish property
-                                break;
+                            case "properties":
+                                {
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    tileset.Properties = LoadProperties(st);
+                                    break;
+                                }
                         }
                         break;
                     case XmlNodeType.EndElement:
@@ -143,11 +166,14 @@ namespace TilemapPipeline
             return tileset;
         }
 
-
-
-        public LayerContent LoadLayer(XmlReader reader)
+        /// <summary>
+        /// Loads a TiledLayerContent from an `<Layer>` element
+        /// </summary>
+        /// <param name="reader">The XML Reader</param>
+        /// <returns>The loaded TiledLayerContent</returns>
+        public TiledLayerContent LoadLayer(XmlReader reader)
         {
-            LayerContent layer = new();
+            TiledLayerContent layer = new();
 
             layer.Name = reader.GetAttribute("name");
             int.TryParse(reader.GetAttribute("width"), out layer.Width);
@@ -195,24 +221,20 @@ namespace TilemapPipeline
                                                             if ((tileData & FlippedHorizontallyFlag) != 0)
                                                             {
                                                                 spriteEffects |= SpriteEffects.FlipHorizontally;
-                                                                Context.Logger.LogMessage("Flipped Horizontally");
                                                             }
                                                             if ((tileData & FlippedVerticallyFlag) != 0)
                                                             {
                                                                 spriteEffects |= SpriteEffects.FlipVertically;
-                                                                Context.Logger.LogMessage("Flipped Vertically");
                                                             }
                                                             if ((tileData & FlippedDiagonallyFlag) != 0)
                                                             {
                                                                 spriteEffects |= SpriteEffects.FlipVertically & SpriteEffects.FlipHorizontally;
-                                                                Context.Logger.LogMessage("Flipped Horizontally and Vertically");
                                                             }
 
                                                             layer.SpriteEffects[i] = spriteEffects;
 
                                                             // Clear flipped bits before storing tile data
                                                             tileData &= ~(FlippedHorizontallyFlag | FlippedVerticallyFlag | FlippedDiagonallyFlag);
-                                                            Context.Logger.LogMessage(i + " is " + tileData);
 
                                                             layer.TileIndices[i] = (int)tileData;
                                                         }
@@ -232,7 +254,9 @@ namespace TilemapPipeline
                                 }
                             case "properties":
                                 {
-                                    // TODO: Read properties
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    layer.Properties = LoadProperties(st);
                                     break;
                                 }
 
@@ -245,6 +269,113 @@ namespace TilemapPipeline
 
             // Return the loaded layer
             return layer;
+        }
+
+        /// <summary>
+        /// Loads a TiledObjectGroupContent from an `<ObjectGroup>` element
+        /// </summary>
+        /// <param name="reader">The XML Reader</param>
+        /// <returns>The loaded TiledObjectGroupContent</returns>
+        public TiledObjectGroupContent LoadObjectGroup(XmlReader reader)
+        {
+            TiledObjectGroupContent group = new();
+
+            group.Name = reader.GetAttribute("name");
+            int.TryParse(reader.GetAttribute("x"), out group.X);
+            int.TryParse(reader.GetAttribute("y"), out group.Y);
+            int.TryParse(reader.GetAttribute("width"), out group.Width);
+            int.TryParse(reader.GetAttribute("height"), out group.Height);
+            float.TryParse(reader.GetAttribute("opacity"), out group.Opacity);
+
+            while (reader.Read())
+            {
+                var name = reader.Name;
+
+                switch(reader.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        switch(name)
+                        {
+                            case "object":
+                                {
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    group.Objects.Add(LoadObject(st));
+                                }
+                                break;
+                            case "properties":
+                                {
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    group.Properties = LoadProperties(st);
+                                }
+                                break;
+                        }
+                        break;
+                    case XmlNodeType.EndElement:
+                        break;
+                }
+            }
+
+            return group;
+        }
+
+        /// <summary>
+        /// Loads a TiledObjectContent from an `<object>` element
+        /// </summary>
+        /// <param name="reader">The XMLReader</param>
+        /// <returns>The populated TiledObjectContent</returns>
+        public TiledObjectContent LoadObject(XmlReader reader)
+        {
+            TiledObjectContent obj = new();
+
+            obj.Name = reader.GetAttribute("name");
+            obj.Type = reader.GetAttribute("type");
+            int.TryParse(reader.GetAttribute("x"), out obj.Y);
+            int.TryParse(reader.GetAttribute("y"), out obj.X);
+            int.TryParse(reader.GetAttribute("width"), out obj.Width);
+            int.TryParse(reader.GetAttribute("height"), out obj.Height);
+            float.TryParse(reader.GetAttribute("rotation"), out obj.Rotation);
+            bool.TryParse(reader.GetAttribute("visisble"), out obj.Visible);
+
+            while (reader.Read())
+            {
+                var name = reader.Name;
+
+                if (name == "properties")
+                {
+                    using var st = reader.ReadSubtree();
+                    st.Read();
+                    obj.Properties = LoadProperties(st);
+                }
+            }
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Loads properties from a `<properties>` element
+        /// </summary>
+        /// <param name="reader">The XML reader</param>
+        /// <returns>The properties as a dictionary</returns>
+        public Dictionary<string, string> LoadProperties(XmlReader reader)
+        {
+            Dictionary<string, string> properties = new();
+
+            while (reader.Read())
+            {
+                var name = reader.Name;
+
+                if(name == "property")
+                {
+                    string key = reader.GetAttribute("name");
+                    string value = reader.GetAttribute("value");
+                    properties.Add(key, value);
+                }
+            }          
+
+
+            return properties;
         }
     }
 }

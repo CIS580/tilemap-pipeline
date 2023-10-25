@@ -1,22 +1,25 @@
 ﻿using Microsoft.Xna.Framework.Content.Pipeline.Graphics;
 using Microsoft.Xna.Framework.Content.Pipeline;
 using Microsoft.Xna.Framework;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TilemapPipeline
 {
     /// <summary>
-    /// Processes a MapContent into a BasicTilemapContent object, building and linking the associated texture 
-    /// and setting up the tile information.
+    /// Processes a TiledMapContent into a BasicTilemapContent object, building and linking the associated texture 
+    /// and setting up the tile information. The BasicTilemapContent only supports one tile layer and one tileset,
+    /// so any additional information in the TiledMapContent is discarded.
     /// </summary>
     [ContentProcessor(DisplayName = "BasicTilemapProcessor")]
-    public class BasicTilemapProcessor : ContentProcessor<MapContent, BasicTilemapContent>
+    public class BasicTilemapProcessor : ContentProcessor<TiledMapContent, BasicTilemapContent>
     {
-        public override BasicTilemapContent Process(MapContent map, ContentProcessorContext context)
+        /// <summary>
+        /// Processes the TiledMapContent into a BasicTilemapContent
+        /// </summary>
+        /// <param name="map"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public override BasicTilemapContent Process(TiledMapContent map, ContentProcessorContext context)
         {
             // We'll be copying data from the Tiled MapContent object into an output BasicTilemapContent object
             BasicTilemapContent output = new();

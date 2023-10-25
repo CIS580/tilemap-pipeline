@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 
 namespace TilemapPipeline
 {
+    /// <summary>
+    /// A game-specific implementation of a tilemap. This is a very limited
+    /// representation, which only allows for one layer and one tileset.
+    /// </summary>
     [ContentSerializerRuntimeType("ExampleGame.BasicTilemap, ExampleGame")]
     public class BasicTilemapContent
     {

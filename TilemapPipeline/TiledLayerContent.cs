@@ -1,23 +1,46 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TilemapPipeline
 {
+    /// <summary>
+    /// A class representing the `<layer>` element from a tiled tilemap.
+    /// </summary>
     public class TiledLayerContent
     {
-        public string Name { get; set; }
+        /// <summary>
+        /// The layer name
+        /// </summary>
+        public string Name;
 
-        public int Width { get; set; }
+        /// <summary>
+        /// The layer width
+        /// </summary>
+        public int Width;
 
-        public int Height { get; set; }
+        /// <summary>
+        /// The layer height
+        /// </summary>
+        public int Height;
 
-        public float Opacity { get; set; }
+        /// <summary>
+        /// The layer opacity
+        /// </summary>
+        public float Opacity;
 
-        public int[] Tiles { get; set; }
+        /// <summary>
+        /// The indices of all tiles in the layer
+        /// </summary>
+        public int[] TileIndices;
 
-        public byte[] FlipAndRotate { get; set; }
+        /// <summary>
+        /// SpriteEffects applied to tiles in the layer
+        /// </summary>
+        public SpriteEffects[] SpriteEffects;
+
+        /// <summary>
+        /// The layer properties
+        /// </summary>
+        public Dictionary<string, string> Properties;
     }
 }
