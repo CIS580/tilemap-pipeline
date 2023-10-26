@@ -207,8 +207,13 @@ namespace TilemapPipeline
                                                     reader.ReadElementContentAsBase64(buffer, 0, dataSize);
 
                                                     Stream stream = new MemoryStream(buffer, false);
+
+                                                    // If the stream is compressed, we need to decompress it 
+                                                    // in order to use it
                                                     if (compressor == "gzip")
                                                         stream = new GZipStream(stream, CompressionMode.Decompress, false);
+                                                    if (compressor == "zlib")
+                                                        stream = new ZlibStream(stream, CompressionMode.Decompress, false);
 
                                                     using (stream)
                                                     using (var br = new BinaryReader(stream))
