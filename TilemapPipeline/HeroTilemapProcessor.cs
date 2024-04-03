@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace TilemapPipeline
 {
     [ContentProcessor(DisplayName = "HeroTilemap Processor")]
-    public class HeroTilemapProcessor : ContentProcessor<TiledMapContent, OOTilemapContent>
+    public class HeroTilemapProcessor : ContentProcessor<TiledMapContent, HeroTilemapContent>
     {
         public override HeroTilemapContent Process(TiledMapContent input, ContentProcessorContext context)
         {
