@@ -341,7 +341,7 @@ namespace TilemapPipeline
             int.TryParse(reader.GetAttribute("width"), out obj.Width);
             int.TryParse(reader.GetAttribute("height"), out obj.Height);
             float.TryParse(reader.GetAttribute("rotation"), out obj.Rotation);
-            bool.TryParse(reader.GetAttribute("visisble"), out obj.Visible);
+            bool.TryParse(reader.GetAttribute("visible"), out obj.Visible);
 
             while (reader.Read())
             {
