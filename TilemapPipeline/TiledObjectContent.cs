@@ -30,22 +30,22 @@ namespace TilemapPipeline
         /// <summary>
         /// The x position of the object
         /// </summary>
-        public int X;
+        public float X;
 
         /// <summary>
         /// The y position of the object
         /// </summary>
-        public int Y;
+        public float Y;
 
         /// <summary>
         /// The width of the object
         /// </summary>
-        public int Width;
+        public float Width;
 
         /// <summary>
         /// The height of the object
         /// </summary>
-        public int Height;
+        public float Height;
 
         /// <summary>
         /// A reference to a tile

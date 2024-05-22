@@ -27,5 +27,7 @@ namespace TilemapPipeline
         public Texture2DContent Texture;
 
         public Dictionary<string, string> Properties = new();
+
+        public Dictionary<int, Dictionary<string, string>> TileProperties = new();
     }
 }

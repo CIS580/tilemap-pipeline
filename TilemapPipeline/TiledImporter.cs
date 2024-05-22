@@ -19,6 +19,11 @@ namespace TilemapPipeline
     public class TiledImporter : ContentImporter<TiledMapContent>
     {
         /// <summary>
+        /// The ImporterContext associated with this importer
+        /// </summary>
+        public ContentImporterContext Context { get; private set; }
+
+        /// <summary>
         /// Imports a Tiled map file in the .tmx format.  This is an XML-based file format 
         /// that is documented here: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/
         /// </summary>
@@ -28,6 +33,8 @@ namespace TilemapPipeline
         /// <exception cref="Exception"></exception>
         public override TiledMapContent Import(string filename, ContentImporterContext context)
         {
+            Context = context;
+
             XmlReaderSettings settings = new();
             settings.DtdProcessing = DtdProcessing.Parse;
 
@@ -147,7 +154,13 @@ namespace TilemapPipeline
                                 tileset.ImageFilename = reader.GetAttribute("source");
                                 break;
                             case "tile":
-                                currentTileId = int.Parse(reader.GetAttribute("id"));
+                                {
+                                    currentTileId = int.Parse(reader.GetAttribute("id"));
+                                    Context.Logger.LogMessage("Found tile id" + currentTileId);
+                                    using var st = reader.ReadSubtree();
+                                    st.Read();
+                                    tileset.TileProperties.Add(currentTileId, LoadTileProperties(st));
+                                }
                                 break;
                             case "properties":
                                 {
@@ -164,6 +177,34 @@ namespace TilemapPipeline
             }
 
             return tileset;
+        }
+
+        /// <summary>
+        /// Loads custom tile properties from a `<Tile>` element
+        /// </summary>
+        /// <param name="reader">the XML Reader</param>
+        /// <returns>a properties dictionary</returns>
+        public Dictionary<string, string> LoadTileProperties(XmlReader reader)
+        {
+            while (reader.Read())
+            {
+                var name = reader.Name;
+
+                switch (reader.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        if (name ==  "properties")
+                        {
+                            using var st = reader.ReadSubtree();
+                            st.Read();
+                            return LoadProperties(st);
+                        }
+                        break;
+                    case XmlNodeType.EndElement:
+                        break;
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -336,12 +377,16 @@ namespace TilemapPipeline
 
             obj.Name = reader.GetAttribute("name");
             obj.Type = reader.GetAttribute("type");
-            int.TryParse(reader.GetAttribute("x"), out obj.Y);
-            int.TryParse(reader.GetAttribute("y"), out obj.X);
-            int.TryParse(reader.GetAttribute("width"), out obj.Width);
-            int.TryParse(reader.GetAttribute("height"), out obj.Height);
+            float.TryParse(reader.GetAttribute("x"), out obj.X);
+            float.TryParse(reader.GetAttribute("y"), out obj.Y);
+            float.TryParse(reader.GetAttribute("width"), out obj.Width);
+            float.TryParse(reader.GetAttribute("height"), out obj.Height);
             float.TryParse(reader.GetAttribute("rotation"), out obj.Rotation);
             bool.TryParse(reader.GetAttribute("visible"), out obj.Visible);
+
+            Context.Logger.LogMessage(reader.GetAttribute("x"));
+
+            Context.Logger.LogMessage("Loading " + obj.Name + " with type " + obj.Type + " and Location " + obj.X + "," + obj.Y);
 
             while (reader.Read())
             {
